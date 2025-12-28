@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   gridContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xxl * 2,
   },
   columnWrapper: {
     justifyContent: 'space-between',

@@ -205,6 +205,10 @@ function DetailModal({
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <X size={24} color={colors.text} />
+          </TouchableOpacity>
+
           <View style={styles.imageContainer}>
             {primaryPhoto ? (
               <TouchableOpacity onPress={() => setSelectedPhoto(primaryPhoto)} activeOpacity={0.9}>
@@ -227,12 +231,7 @@ function DetailModal({
           </View>
 
           <View style={styles.detailInfo}>
-            <View style={styles.titleRow}>
-              <Text style={styles.detailTitle}>{piece.title}</Text>
-              <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <X size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.detailTitle}>{piece.title}</Text>
             {piece.description ? (
               <Text style={styles.detailDescription}>{piece.description}</Text>
             ) : null}
@@ -456,6 +455,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.medium,
   },
+  closeButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    zIndex: 1,
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.soft,
+  },
   imageContainer: {
     position: 'relative',
   },
@@ -491,16 +503,9 @@ const styles = StyleSheet.create({
   detailInfo: {
     padding: spacing.lg,
   },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
   detailTitle: {
     ...typography.title,
-    flex: 1,
-    marginRight: spacing.md,
+    marginBottom: spacing.sm,
   },
   detailDescription: {
     ...typography.body,

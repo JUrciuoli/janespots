@@ -13,9 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { X, Edit2, Trash2 } from 'lucide-react-native';
+import { X, Edit2, Trash2, Camera } from 'lucide-react-native';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import PhotoCapture from '@/components/PhotoCapture';
 
 interface Piece {
   id: string;
@@ -150,6 +151,7 @@ function DetailModal({
   const [dateInput, setDateInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   if (!piece) return null;
 
@@ -207,17 +209,26 @@ function DetailModal({
             <X size={24} color={colors.text} />
           </TouchableOpacity>
 
-          {primaryPhoto ? (
-            <TouchableOpacity onPress={() => setSelectedPhoto(primaryPhoto)} activeOpacity={0.9}>
-              <Image source={{ uri: primaryPhoto.url }} style={styles.detailImage} />
+          <View style={styles.imageContainer}>
+            {primaryPhoto ? (
+              <TouchableOpacity onPress={() => setSelectedPhoto(primaryPhoto)} activeOpacity={0.9}>
+                <Image source={{ uri: primaryPhoto.url }} style={styles.detailImage} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.detailPlaceholder}>
+                <Text style={styles.detailPlaceholderText}>
+                  {piece.title.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity
+              style={styles.addPhotoButton}
+              onPress={() => setShowCamera(true)}
+              activeOpacity={0.8}
+            >
+              <Camera size={24} color={colors.surface} />
             </TouchableOpacity>
-          ) : (
-            <View style={styles.detailPlaceholder}>
-              <Text style={styles.detailPlaceholderText}>
-                {piece.title.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
+          </View>
 
           <View style={styles.detailInfo}>
             <Text style={styles.detailTitle}>{piece.title}</Text>
@@ -284,6 +295,16 @@ function DetailModal({
           onUpdate();
           onClose();
         }}
+      />
+
+      <PhotoCapture
+        visible={showCamera}
+        onClose={() => setShowCamera(false)}
+        onPhotoAdded={() => {
+          setShowCamera(false);
+          onUpdate();
+        }}
+        pieceId={piece.id}
       />
     </Modal>
   );
@@ -447,10 +468,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadows.soft,
   },
+  imageContainer: {
+    position: 'relative',
+  },
   detailImage: {
     width: '100%',
     height: 300,
     resizeMode: 'cover',
+  },
+  addPhotoButton: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    right: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    backgroundColor: colors.clay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.medium,
   },
   detailPlaceholder: {
     width: '100%',

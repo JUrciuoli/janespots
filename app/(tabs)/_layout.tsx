@@ -12,9 +12,9 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.borderLight,
           borderTopWidth: 1,
-          paddingTop: 8,
-          paddingBottom: 8,
-          height: 60,
+          paddingTop: 12,
+          paddingBottom: 16,
+          height: 80,
           shadowColor: colors.text,
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.04,
@@ -24,7 +24,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.clay,
         tabBarInactiveTintColor: colors.textLight,
         tabBarIconStyle: {
-          marginTop: 2,
+          marginTop: -4,
         },
       }}
     >

@@ -24,7 +24,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.clay,
         tabBarInactiveTintColor: colors.textLight,
         tabBarIconStyle: {
-          marginTop: -4,
+          marginTop: -1,
         },
       }}
     >

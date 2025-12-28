@@ -616,7 +616,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl * 2,
   },
   pieceCard: {
     backgroundColor: colors.surface,
@@ -687,7 +686,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: spacing.xxl,
+    bottom: spacing.lg,
     right: spacing.lg,
     width: 56,
     height: 56,

@@ -7,13 +7,14 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.borderLight,
           borderTopWidth: 1,
-          paddingTop: 12,
-          paddingBottom: 12,
-          height: 70,
+          paddingTop: 8,
+          paddingBottom: 8,
+          height: 60,
           shadowColor: colors.text,
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.04,
@@ -22,13 +23,6 @@ export default function TabLayout() {
         },
         tabBarActiveTintColor: colors.clay,
         tabBarInactiveTintColor: colors.textLight,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontFamily: 'Inter_500Medium',
-          marginTop: 2,
-          marginBottom: 4,
-          letterSpacing: 0.3,
-        },
         tabBarIconStyle: {
           marginTop: 2,
         },

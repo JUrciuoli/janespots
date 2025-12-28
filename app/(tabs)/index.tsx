@@ -10,9 +10,10 @@ import {
   ActivityIndicator,
   ScrollView,
   Image,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, ChevronRight, Trash2 } from 'lucide-react-native';
+import { Plus, ChevronRight, Trash2, X } from 'lucide-react-native';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
@@ -329,6 +330,7 @@ function StageModal({
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [showPhotoInput, setShowPhotoInput] = useState(false);
   const [showCompletePrompt, setShowCompletePrompt] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<any | null>(null);
 
   useEffect(() => {
     if (piece && visible) {
@@ -450,11 +452,16 @@ function StageModal({
                 <Text style={styles.sectionTitle}>Photos</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosList}>
                   {photos.map((photo) => (
-                    <Image
+                    <TouchableOpacity
                       key={photo.id}
-                      source={{ uri: photo.url }}
-                      style={styles.photoThumbnail}
-                    />
+                      onPress={() => setSelectedPhoto(photo)}
+                      activeOpacity={0.8}
+                    >
+                      <Image
+                        source={{ uri: photo.url }}
+                        style={styles.photoThumbnail}
+                      />
+                    </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>
@@ -585,6 +592,82 @@ function StageModal({
             )}
           </View>
         </ScrollView>
+      </View>
+
+      <FullscreenImageModal
+        visible={!!selectedPhoto}
+        photo={selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        onDelete={() => {
+          setSelectedPhoto(null);
+          fetchPhotos();
+        }}
+      />
+    </Modal>
+  );
+}
+
+function FullscreenImageModal({
+  visible,
+  photo,
+  onClose,
+  onDelete,
+}: {
+  visible: boolean;
+  photo: any;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+  const { width, height } = Dimensions.get('window');
+
+  const handleDelete = async () => {
+    if (!photo) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('photos').delete().eq('id', photo.id);
+
+      if (error) throw error;
+
+      onDelete();
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (!photo) return null;
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent>
+      <View style={styles.fullscreenOverlay}>
+        <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
+          <X size={28} color={colors.surface} />
+        </TouchableOpacity>
+
+        <Image
+          source={{ uri: photo.url }}
+          style={[styles.fullscreenImage, { width, height: height * 0.8 }]}
+          resizeMode="contain"
+        />
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDelete}
+          disabled={deleting}
+          activeOpacity={0.8}
+        >
+          {deleting ? (
+            <ActivityIndicator color={colors.surface} />
+          ) : (
+            <>
+              <Trash2 size={20} color={colors.surface} />
+              <Text style={styles.deleteButtonText}>Delete Photo</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
     </Modal>
   );
@@ -861,5 +944,45 @@ const styles = StyleSheet.create({
   scrapText: {
     ...typography.bodyMedium,
     color: colors.error,
+  },
+  fullscreenOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: spacing.lg,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: '100%',
+    height: '80%',
+  },
+  deleteButton: {
+    position: 'absolute',
+    bottom: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.error,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radius.full,
+    ...shadows.medium,
+    minWidth: 160,
+  },
+  deleteButtonText: {
+    ...typography.bodyMedium,
+    color: colors.surface,
+    marginLeft: spacing.sm,
   },
 });

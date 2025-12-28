@@ -149,6 +149,7 @@ function DetailModal({
   const [editingDate, setEditingDate] = useState(false);
   const [dateInput, setDateInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
   if (!piece) return null;
 
@@ -207,7 +208,9 @@ function DetailModal({
           </TouchableOpacity>
 
           {primaryPhoto ? (
-            <Image source={{ uri: primaryPhoto.url }} style={styles.detailImage} />
+            <TouchableOpacity onPress={() => setSelectedPhoto(primaryPhoto)} activeOpacity={0.9}>
+              <Image source={{ uri: primaryPhoto.url }} style={styles.detailImage} />
+            </TouchableOpacity>
           ) : (
             <View style={styles.detailPlaceholder}>
               <Text style={styles.detailPlaceholderText}>
@@ -270,6 +273,83 @@ function DetailModal({
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+
+      <FullscreenImageModal
+        visible={!!selectedPhoto}
+        photo={selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        onDelete={() => {
+          setSelectedPhoto(null);
+          onUpdate();
+          onClose();
+        }}
+      />
+    </Modal>
+  );
+}
+
+function FullscreenImageModal({
+  visible,
+  photo,
+  onClose,
+  onDelete,
+}: {
+  visible: boolean;
+  photo: Photo | null;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+  const { width, height } = Dimensions.get('window');
+
+  const handleDelete = async () => {
+    if (!photo) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from('photos').delete().eq('id', photo.id);
+
+      if (error) throw error;
+
+      onDelete();
+    } catch (error) {
+      console.error('Error deleting photo:', error);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (!photo) return null;
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent>
+      <View style={styles.fullscreenOverlay}>
+        <TouchableOpacity style={styles.fullscreenCloseButton} onPress={onClose} activeOpacity={0.8}>
+          <X size={28} color={colors.surface} />
+        </TouchableOpacity>
+
+        <Image
+          source={{ uri: photo.url }}
+          style={[styles.fullscreenImage, { width, height: height * 0.8 }]}
+          resizeMode="contain"
+        />
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={handleDelete}
+          disabled={deleting}
+          activeOpacity={0.8}
+        >
+          {deleting ? (
+            <ActivityIndicator color={colors.surface} />
+          ) : (
+            <>
+              <Trash2 size={20} color={colors.surface} />
+              <Text style={styles.deleteButtonText}>Delete Photo</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
     </Modal>
   );
@@ -457,5 +537,45 @@ const styles = StyleSheet.create({
   scrapText: {
     ...typography.bodyMedium,
     color: colors.error,
+  },
+  fullscreenOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenCloseButton: {
+    position: 'absolute',
+    top: 60,
+    right: spacing.lg,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: '100%',
+    height: '80%',
+  },
+  deleteButton: {
+    position: 'absolute',
+    bottom: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.error,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radius.full,
+    ...shadows.medium,
+    minWidth: 160,
+  },
+  deleteButtonText: {
+    ...typography.bodyMedium,
+    color: colors.surface,
+    marginLeft: spacing.sm,
   },
 });

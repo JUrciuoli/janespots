@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
-import { Package, Grid3x3, Lightbulb } from 'lucide-react-native';
+import { Grid3x3, Lightbulb } from 'lucide-react-native';
 import { colors } from '@/constants/theme';
+import { ClayPotIcon } from '@/components/ClayPotIcon';
 
 export default function TabLayout() {
   return (
@@ -32,7 +33,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Works',
-          tabBarIcon: ({ size, color }) => <Package size={22} color={color} strokeWidth={1.8} />,
+          tabBarIcon: ({ size, color }) => <ClayPotIcon size={22} color={color} />,
         }}
       />
       <Tabs.Screen

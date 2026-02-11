@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { X, Edit2, Trash2, Camera } from 'lucide-react-native';
+import { X, Edit2, Trash2, Camera, Image as ImageIcon } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import PhotoCapture from '@/components/PhotoCapture';
@@ -137,6 +138,29 @@ export default function GalleryScreen() {
   );
 }
 
+async function uploadImageToSupabase(uri: string): Promise<string | null> {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const filename = `${Date.now()}.jpg`;
+
+    const { data, error } = await supabase.storage
+      .from('piece-photos')
+      .upload(filename, blob, {
+        contentType: 'image/jpeg',
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    const { data: urlData } = supabase.storage.from('piece-photos').getPublicUrl(filename);
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    return null;
+  }
+}
+
 function DetailModal({
   visible,
   piece,
@@ -153,6 +177,7 @@ function DetailModal({
   const [saving, setSaving] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [addingPhoto, setAddingPhoto] = useState(false);
 
   if (!piece) return null;
 
@@ -169,6 +194,54 @@ function DetailModal({
       onUpdate();
     } catch (error) {
       console.error('Error scrapping piece:', error);
+    }
+  };
+
+  const pickDevicePhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Media library permission is required to select photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await handleImageUpload(result.assets[0].uri);
+    }
+  };
+
+  const handleImageUpload = async (uri: string) => {
+    if (!piece) return;
+
+    setAddingPhoto(true);
+    try {
+      const uploadedUrl = await uploadImageToSupabase(uri);
+      if (!uploadedUrl) throw new Error('Failed to upload image');
+
+      const isFirstPhoto = piece.photos.length === 0;
+
+      const { error } = await supabase.from('photos').insert([
+        {
+          piece_id: piece.id,
+          url: uploadedUrl,
+          is_primary: isFirstPhoto,
+        },
+      ]);
+
+      if (error) throw error;
+
+      onUpdate();
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Failed to upload photo');
+    } finally {
+      setAddingPhoto(false);
     }
   };
 
@@ -222,13 +295,29 @@ function DetailModal({
                 </Text>
               </View>
             )}
-            <TouchableOpacity
-              style={styles.addPhotoButton}
-              onPress={() => setShowCamera(true)}
-              activeOpacity={0.8}
-            >
-              <Camera size={24} color={colors.surface} />
-            </TouchableOpacity>
+            {addingPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="large" color={colors.clay} />
+              </View>
+            )}
+            <View style={styles.photoButtonsContainer}>
+              <TouchableOpacity
+                style={styles.photoActionButton}
+                onPress={pickDevicePhoto}
+                activeOpacity={0.8}
+                disabled={addingPhoto}
+              >
+                <ImageIcon size={24} color={colors.surface} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.photoActionButton}
+                onPress={() => setShowCamera(true)}
+                activeOpacity={0.8}
+                disabled={addingPhoto}
+              >
+                <Camera size={24} color={colors.surface} />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.detailInfo}>
@@ -477,10 +566,24 @@ const styles = StyleSheet.create({
     height: 300,
     resizeMode: 'cover',
   },
-  addPhotoButton: {
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoButtonsContainer: {
     position: 'absolute',
     bottom: spacing.lg,
     right: spacing.lg,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  photoActionButton: {
     width: 56,
     height: 56,
     borderRadius: radius.full,

@@ -33,7 +33,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Works',
-          tabBarIcon: ({ size, color }) => <ClayPotIcon size={22} color={color} />,
+          tabBarIcon: ({ size, color }) => <ClayPotIcon size={33} color={color} />,
         }}
       />
       <Tabs.Screen

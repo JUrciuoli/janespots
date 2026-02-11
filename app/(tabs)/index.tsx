@@ -13,7 +13,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, Trash2, X } from 'lucide-react-native';
+import { Plus, Trash2, X, Camera, Image as ImageIcon } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
@@ -365,6 +366,103 @@ function StageModal({
     }
   };
 
+  const uploadImageToSupabase = async (uri: string): Promise<string | null> => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('piece-photos')
+        .upload(filePath, arrayBuffer, {
+          contentType: `image/${fileExt}`,
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('piece-photos')
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Camera permission is required to take photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await handleImageUpload(result.assets[0].uri);
+    }
+  };
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Media library permission is required to select photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await handleImageUpload(result.assets[0].uri);
+    }
+  };
+
+  const handleImageUpload = async (uri: string) => {
+    if (!piece) return;
+
+    setAddingPhoto(true);
+    try {
+      const uploadedUrl = await uploadImageToSupabase(uri);
+      if (!uploadedUrl) throw new Error('Failed to upload image');
+
+      const isFirstPhoto = photos.length === 0;
+
+      const { error } = await supabase.from('photos').insert([
+        {
+          piece_id: piece.id,
+          url: uploadedUrl,
+          is_primary: isFirstPhoto,
+        },
+      ]);
+
+      if (error) throw error;
+
+      setShowPhotoInput(false);
+      fetchPhotos();
+    } catch (error) {
+      console.error('Error adding photo:', error);
+      alert('Failed to add photo. Please try again.');
+    } finally {
+      setAddingPhoto(false);
+    }
+  };
+
   const handleAddPhoto = async () => {
     if (!photoUrl.trim() || !piece) return;
 
@@ -429,6 +527,73 @@ function StageModal({
     setPhotoUrl('');
   };
 
+  const handleCompleteWithDevicePhoto = async (uri: string) => {
+    if (!piece) return;
+
+    setAddingPhoto(true);
+    try {
+      const uploadedUrl = await uploadImageToSupabase(uri);
+      if (uploadedUrl) {
+        const isFirstPhoto = photos.length === 0;
+
+        const { error } = await supabase.from('photos').insert([
+          {
+            piece_id: piece.id,
+            url: uploadedUrl,
+            is_primary: isFirstPhoto,
+          },
+        ]);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error adding photo:', error);
+    } finally {
+      setAddingPhoto(false);
+    }
+
+    onUpdateStage(piece.id, 'completed');
+    setShowCompletePrompt(false);
+  };
+
+  const handleTakePhotoForComplete = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Camera permission is required to take photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await handleCompleteWithDevicePhoto(result.assets[0].uri);
+    }
+  };
+
+  const handlePickImageForComplete = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Media library permission is required to select photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await handleCompleteWithDevicePhoto(result.assets[0].uri);
+    }
+  };
+
   if (!piece) return null;
 
   const allStages = [...STAGES, { value: 'completed', label: 'Completed' }];
@@ -463,6 +628,25 @@ function StageModal({
             {showPhotoInput ? (
               <View style={styles.photoInputSection}>
                 <Text style={styles.sectionTitle}>Add Photo</Text>
+                <View style={styles.photoOptionsRow}>
+                  <TouchableOpacity
+                    style={styles.photoOptionButton}
+                    onPress={handleTakePhoto}
+                    disabled={addingPhoto}
+                  >
+                    <Camera size={24} color={colors.clay} />
+                    <Text style={styles.photoOptionText}>Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.photoOptionButton}
+                    onPress={handlePickImage}
+                    disabled={addingPhoto}
+                  >
+                    <ImageIcon size={24} color={colors.clay} />
+                    <Text style={styles.photoOptionText}>From Library</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.orDivider}>or</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Enter image URL"
@@ -478,6 +662,7 @@ function StageModal({
                       setShowPhotoInput(false);
                       setPhotoUrl('');
                     }}
+                    disabled={addingPhoto}
                   >
                     <Text style={styles.modalButtonTextSecondary}>Cancel</Text>
                   </TouchableOpacity>
@@ -489,10 +674,16 @@ function StageModal({
                     {addingPhoto ? (
                       <ActivityIndicator color={colors.surface} />
                     ) : (
-                      <Text style={styles.modalButtonTextPrimary}>Add</Text>
+                      <Text style={styles.modalButtonTextPrimary}>Add URL</Text>
                     )}
                   </TouchableOpacity>
                 </View>
+                {addingPhoto && (
+                  <View style={styles.uploadingIndicator}>
+                    <ActivityIndicator color={colors.clay} />
+                    <Text style={styles.uploadingText}>Uploading...</Text>
+                  </View>
+                )}
               </View>
             ) : (
               <TouchableOpacity
@@ -551,6 +742,25 @@ function StageModal({
                 <Text style={styles.modalSubtitle}>
                   Add a photo to celebrate completing this piece
                 </Text>
+                <View style={styles.photoOptionsRow}>
+                  <TouchableOpacity
+                    style={styles.photoOptionButton}
+                    onPress={handleTakePhotoForComplete}
+                    disabled={addingPhoto}
+                  >
+                    <Camera size={24} color={colors.clay} />
+                    <Text style={styles.photoOptionText}>Take Photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.photoOptionButton}
+                    onPress={handlePickImageForComplete}
+                    disabled={addingPhoto}
+                  >
+                    <ImageIcon size={24} color={colors.clay} />
+                    <Text style={styles.photoOptionText}>From Library</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.orDivider}>or</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Enter image URL"
@@ -559,6 +769,12 @@ function StageModal({
                   placeholderTextColor={colors.textSubtle}
                   autoCapitalize="none"
                 />
+                {addingPhoto && (
+                  <View style={styles.uploadingIndicator}>
+                    <ActivityIndicator color={colors.clay} />
+                    <Text style={styles.uploadingText}>Uploading...</Text>
+                  </View>
+                )}
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.modalButtonSecondary]}
@@ -566,6 +782,7 @@ function StageModal({
                       setShowCompletePrompt(false);
                       setPhotoUrl('');
                     }}
+                    disabled={addingPhoto}
                   >
                     <Text style={styles.modalButtonTextSecondary}>Cancel</Text>
                   </TouchableOpacity>
@@ -574,11 +791,9 @@ function StageModal({
                     onPress={handleCompleteWithPhoto}
                     disabled={addingPhoto}
                   >
-                    {addingPhoto ? (
-                      <ActivityIndicator color={colors.surface} />
-                    ) : (
-                      <Text style={styles.modalButtonTextPrimary}>Complete</Text>
-                    )}
+                    <Text style={styles.modalButtonTextPrimary}>
+                      {photoUrl.trim() ? 'Complete with URL' : 'Skip & Complete'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -920,6 +1135,46 @@ const styles = StyleSheet.create({
   },
   photoInputSection: {
     marginBottom: spacing.md,
+  },
+  photoOptionsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  photoOptionButton: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  photoOptionText: {
+    ...typography.caption,
+    color: colors.clay,
+    fontWeight: '500',
+  },
+  orDivider: {
+    ...typography.caption,
+    textAlign: 'center',
+    color: colors.textSubtle,
+    marginBottom: spacing.md,
+  },
+  uploadingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  uploadingText: {
+    ...typography.caption,
+    color: colors.clay,
   },
   addPhotoButton: {
     flexDirection: 'row',

@@ -9,13 +9,12 @@ import {
   ActivityIndicator,
   Switch,
   ScrollView,
-  Image,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
-import { Plus, Sparkles, Play, Edit2, GripVertical, Image as ImageIcon, Trash2 } from 'lucide-react-native';
+import { Plus, Sparkles, Play, Edit2, GripVertical, Trash2 } from 'lucide-react-native';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
@@ -27,12 +26,6 @@ interface Idea {
   priority: number | null;
   display_order: number;
   created_at: string;
-}
-
-interface Photo {
-  id: string;
-  url: string;
-  is_primary: boolean;
 }
 
 export default function IdeasScreen() {
@@ -398,33 +391,6 @@ function DetailModal({
   const [editingDescription, setEditingDescription] = useState(false);
   const [descriptionInput, setDescriptionInput] = useState('');
   const [saving, setSaving] = useState(false);
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [photoUrl, setPhotoUrl] = useState('');
-  const [addingPhoto, setAddingPhoto] = useState(false);
-  const [showPhotoInput, setShowPhotoInput] = useState(false);
-
-  useEffect(() => {
-    if (idea && visible) {
-      fetchPhotos();
-    }
-  }, [idea, visible]);
-
-  const fetchPhotos = async () => {
-    if (!idea) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('photos')
-        .select('*')
-        .eq('piece_id', idea.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPhotos(data || []);
-    } catch (error) {
-      console.error('Error fetching photos:', error);
-    }
-  };
 
   const handleEditDescription = () => {
     setDescriptionInput(idea?.description || '');
@@ -452,33 +418,6 @@ function DetailModal({
     }
   };
 
-  const handleAddPhoto = async () => {
-    if (!photoUrl.trim() || !idea) return;
-
-    setAddingPhoto(true);
-    try {
-      const isFirstPhoto = photos.length === 0;
-
-      const { error } = await supabase.from('photos').insert([
-        {
-          piece_id: idea.id,
-          url: photoUrl.trim(),
-          is_primary: isFirstPhoto,
-        },
-      ]);
-
-      if (error) throw error;
-
-      setPhotoUrl('');
-      setShowPhotoInput(false);
-      fetchPhotos();
-    } catch (error) {
-      console.error('Error adding photo:', error);
-    } finally {
-      setAddingPhoto(false);
-    }
-  };
-
   if (!idea) return null;
 
   return (
@@ -495,68 +434,6 @@ function DetailModal({
                 </View>
               ) : null}
             </View>
-
-            {photos.length > 0 && (
-              <View style={styles.photosSection}>
-                <Text style={styles.sectionTitle}>Inspiration Photos</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosList}>
-                  {photos.map((photo) => (
-                    <Image
-                      key={photo.id}
-                      source={{ uri: photo.url }}
-                      style={styles.photoThumbnail}
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            {showPhotoInput ? (
-              <View style={styles.photoInputSection}>
-                <Text style={styles.sectionTitle}>Add Inspiration Photo</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter image URL"
-                  value={photoUrl}
-                  onChangeText={setPhotoUrl}
-                  placeholderTextColor={colors.textLight}
-                  autoCapitalize="none"
-                />
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonSecondary]}
-                    onPress={() => {
-                      setShowPhotoInput(false);
-                      setPhotoUrl('');
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.modalButtonTextSecondary}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonPrimary]}
-                    onPress={handleAddPhoto}
-                    disabled={addingPhoto || !photoUrl.trim()}
-                    activeOpacity={0.8}
-                  >
-                    {addingPhoto ? (
-                      <ActivityIndicator color={colors.surface} />
-                    ) : (
-                      <Text style={styles.modalButtonTextPrimary}>Add</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[styles.addPhotoButton]}
-                onPress={() => setShowPhotoInput(true)}
-                activeOpacity={0.7}
-              >
-                <ImageIcon size={20} color={colors.clay} />
-                <Text style={styles.addPhotoText}>Add Inspiration Photo</Text>
-              </TouchableOpacity>
-            )}
 
             {!editingDescription ? (
               <TouchableOpacity

@@ -320,7 +320,6 @@ function StageModal({
   onUpdateStage: (pieceId: string, stage: string) => void;
 }) {
   const [photos, setPhotos] = useState<any[]>([]);
-  const [photoUrl, setPhotoUrl] = useState('');
   const [addingPhoto, setAddingPhoto] = useState(false);
   const [showPhotoInput, setShowPhotoInput] = useState(false);
   const [showCompletePrompt, setShowCompletePrompt] = useState(false);
@@ -463,32 +462,6 @@ function StageModal({
     }
   };
 
-  const handleAddPhoto = async () => {
-    if (!photoUrl.trim() || !piece) return;
-
-    setAddingPhoto(true);
-    try {
-      const isFirstPhoto = photos.length === 0;
-
-      const { error } = await supabase.from('photos').insert([
-        {
-          piece_id: piece.id,
-          url: photoUrl.trim(),
-          is_primary: isFirstPhoto,
-        },
-      ]);
-
-      if (error) throw error;
-
-      setPhotoUrl('');
-      setShowPhotoInput(false);
-      fetchPhotos();
-    } catch (error) {
-      console.error('Error adding photo:', error);
-    } finally {
-      setAddingPhoto(false);
-    }
-  };
 
   const handleStageUpdate = (stage: string) => {
     if (stage === 'completed') {
@@ -498,33 +471,10 @@ function StageModal({
     }
   };
 
-  const handleCompleteWithPhoto = async () => {
+  const handleCompleteWithoutPhoto = async () => {
     if (!piece) return;
-
-    if (photoUrl.trim()) {
-      setAddingPhoto(true);
-      try {
-        const isFirstPhoto = photos.length === 0;
-
-        const { error } = await supabase.from('photos').insert([
-          {
-            piece_id: piece.id,
-            url: photoUrl.trim(),
-            is_primary: isFirstPhoto,
-          },
-        ]);
-
-        if (error) throw error;
-      } catch (error) {
-        console.error('Error adding photo:', error);
-      } finally {
-        setAddingPhoto(false);
-      }
-    }
-
     onUpdateStage(piece.id, 'completed');
     setShowCompletePrompt(false);
-    setPhotoUrl('');
   };
 
   const handleCompleteWithDevicePhoto = async (uri: string) => {
@@ -646,38 +596,13 @@ function StageModal({
                     <Text style={styles.photoOptionText}>From Library</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.orDivider}>or</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter image URL"
-                  value={photoUrl}
-                  onChangeText={setPhotoUrl}
-                  placeholderTextColor={colors.textSubtle}
-                  autoCapitalize="none"
-                />
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonSecondary]}
-                    onPress={() => {
-                      setShowPhotoInput(false);
-                      setPhotoUrl('');
-                    }}
-                    disabled={addingPhoto}
-                  >
-                    <Text style={styles.modalButtonTextSecondary}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalButtonPrimary]}
-                    onPress={handleAddPhoto}
-                    disabled={addingPhoto || !photoUrl.trim()}
-                  >
-                    {addingPhoto ? (
-                      <ActivityIndicator color={colors.surface} />
-                    ) : (
-                      <Text style={styles.modalButtonTextPrimary}>Add URL</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonSecondary, { width: '100%', marginTop: spacing.md }]}
+                  onPress={() => setShowPhotoInput(false)}
+                  disabled={addingPhoto}
+                >
+                  <Text style={styles.modalButtonTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
                 {addingPhoto && (
                   <View style={styles.uploadingIndicator}>
                     <ActivityIndicator color={colors.clay} />
@@ -760,15 +685,6 @@ function StageModal({
                     <Text style={styles.photoOptionText}>From Library</Text>
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.orDivider}>or</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter image URL"
-                  value={photoUrl}
-                  onChangeText={setPhotoUrl}
-                  placeholderTextColor={colors.textSubtle}
-                  autoCapitalize="none"
-                />
                 {addingPhoto && (
                   <View style={styles.uploadingIndicator}>
                     <ActivityIndicator color={colors.clay} />
@@ -778,22 +694,17 @@ function StageModal({
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.modalButtonSecondary]}
-                    onPress={() => {
-                      setShowCompletePrompt(false);
-                      setPhotoUrl('');
-                    }}
+                    onPress={() => setShowCompletePrompt(false)}
                     disabled={addingPhoto}
                   >
                     <Text style={styles.modalButtonTextSecondary}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.modalButtonPrimary]}
-                    onPress={handleCompleteWithPhoto}
+                    onPress={handleCompleteWithoutPhoto}
                     disabled={addingPhoto}
                   >
-                    <Text style={styles.modalButtonTextPrimary}>
-                      {photoUrl.trim() ? 'Complete with URL' : 'Skip & Complete'}
-                    </Text>
+                    <Text style={styles.modalButtonTextPrimary}>Skip & Complete</Text>
                   </TouchableOpacity>
                 </View>
               </>

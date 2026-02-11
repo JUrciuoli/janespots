@@ -17,6 +17,7 @@ import { X, Edit2, Trash2, Camera } from 'lucide-react-native';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import PhotoCapture from '@/components/PhotoCapture';
+import SwipeableModal from '@/components/SwipeableModal';
 
 interface Piece {
   id: string;
@@ -202,7 +203,7 @@ function DetailModal({
   };
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <SwipeableModal visible={visible} animationType="fade" transparent onClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -306,7 +307,7 @@ function DetailModal({
         }}
         pieceId={piece.id}
       />
-    </Modal>
+    </SwipeableModal>
   );
 }
 
@@ -344,7 +345,7 @@ function FullscreenImageModal({
   if (!photo) return null;
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <SwipeableModal visible={visible} animationType="fade" transparent onClose={onClose}>
       <View style={styles.fullscreenOverlay}>
         <TouchableOpacity style={styles.fullscreenCloseButton} onPress={onClose} activeOpacity={0.8}>
           <X size={28} color={colors.surface} />
@@ -372,7 +373,7 @@ function FullscreenImageModal({
           )}
         </TouchableOpacity>
       </View>
-    </Modal>
+    </SwipeableModal>
   );
 }
 

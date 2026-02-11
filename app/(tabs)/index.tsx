@@ -17,6 +17,7 @@ import { Plus, Trash2, X, Camera, Image as ImageIcon } from 'lucide-react-native
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import SwipeableModal from '@/components/SwipeableModal';
 
 interface Piece {
   id: string;
@@ -237,7 +238,7 @@ function AddPieceModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <SwipeableModal visible={visible} animationType="slide" transparent onClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>New Piece</Text>
@@ -304,7 +305,7 @@ function AddPieceModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </SwipeableModal>
   );
 }
 
@@ -549,7 +550,7 @@ function StageModal({
   const allStages = [...STAGES, { value: 'completed', label: 'Completed' }];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <SwipeableModal visible={visible} animationType="slide" transparent onClose={onClose}>
       <View style={styles.modalOverlay}>
         <ScrollView style={styles.modalScrollContent}>
           <View style={styles.modalContent}>
@@ -722,7 +723,7 @@ function StageModal({
           fetchPhotos();
         }}
       />
-    </Modal>
+    </SwipeableModal>
   );
 }
 
@@ -760,7 +761,7 @@ function FullscreenImageModal({
   if (!photo) return null;
 
   return (
-    <Modal visible={visible} animationType="fade" transparent>
+    <SwipeableModal visible={visible} animationType="fade" transparent onClose={onClose}>
       <View style={styles.fullscreenOverlay}>
         <TouchableOpacity style={styles.closeButton} onPress={onClose} activeOpacity={0.8}>
           <X size={28} color={colors.surface} />
@@ -788,7 +789,7 @@ function FullscreenImageModal({
           )}
         </TouchableOpacity>
       </View>
-    </Modal>
+    </SwipeableModal>
   );
 }
 

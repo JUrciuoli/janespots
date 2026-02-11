@@ -12,6 +12,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { X, Camera as CameraIcon, RotateCcw } from 'lucide-react-native';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import SwipeableModal from './SwipeableModal';
 
 interface PhotoCaptureProps {
   visible: boolean;
@@ -83,7 +84,7 @@ export default function PhotoCapture({ visible, onClose, onPhotoAdded, pieceId }
 
   if (!permission.granted) {
     return (
-      <Modal visible={visible} animationType="slide" transparent>
+      <SwipeableModal visible={visible} animationType="slide" transparent onClose={onClose}>
         <View style={styles.overlay}>
           <View style={styles.permissionContainer}>
             <Text style={styles.permissionTitle}>Camera Permission Required</Text>
@@ -105,12 +106,12 @@ export default function PhotoCapture({ visible, onClose, onPhotoAdded, pieceId }
             </View>
           </View>
         </View>
-      </Modal>
+      </SwipeableModal>
     );
   }
 
   return (
-    <Modal visible={visible} animationType="slide">
+    <SwipeableModal visible={visible} animationType="slide" onClose={onClose}>
       <View style={styles.container}>
         <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
           <View style={styles.header}>
@@ -146,7 +147,7 @@ export default function PhotoCapture({ visible, onClose, onPhotoAdded, pieceId }
           </View>
         </CameraView>
       </View>
-    </Modal>
+    </SwipeableModal>
   );
 }
 

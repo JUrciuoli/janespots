@@ -17,6 +17,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 
 import { Plus, Sparkles, Play, Edit2, GripVertical, Trash2 } from 'lucide-react-native';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import SwipeableModal from '@/components/SwipeableModal';
 
 interface Idea {
   id: string;
@@ -312,7 +313,7 @@ function AddIdeaModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <SwipeableModal visible={visible} animationType="slide" transparent onClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>New Idea</Text>
@@ -369,7 +370,7 @@ function AddIdeaModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </SwipeableModal>
   );
 }
 
@@ -421,7 +422,7 @@ function DetailModal({
   if (!idea) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <SwipeableModal visible={visible} animationType="slide" transparent onClose={onClose}>
       <View style={styles.modalOverlay}>
         <ScrollView style={styles.modalScrollContent}>
           <View style={styles.modalContent}>
@@ -519,7 +520,7 @@ function DetailModal({
           </View>
         </ScrollView>
       </View>
-    </Modal>
+    </SwipeableModal>
   );
 }
 

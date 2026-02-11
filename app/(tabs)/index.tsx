@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, ChevronRight, Trash2, X } from 'lucide-react-native';
+import { Plus, Trash2, X } from 'lucide-react-native';
 import { colors, spacing, typography, radius, shadows } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
@@ -73,7 +73,7 @@ export default function CurrentWorksScreen() {
     const sections: SectionData[] = STAGES.map((stage) => ({
       title: stage.label,
       data: pieces.filter((p) => p.stage === stage.value),
-    })).filter((section) => section.data.length > 0);
+    }));
 
     return sections;
   };
@@ -101,47 +101,40 @@ export default function CurrentWorksScreen() {
     }
   };
 
-  const renderPiece = ({ item }: { item: Piece }) => (
-    <TouchableOpacity
-      style={styles.pieceCard}
-      onPress={() => {
-        setSelectedPiece(item);
-        setShowStageModal(true);
-      }}
-    >
-      <View style={styles.pieceContent}>
-        <Text style={styles.pieceTitle}>{item.title}</Text>
-        {item.description ? (
-          <Text style={styles.pieceDescription}>{item.description}</Text>
-        ) : null}
-      </View>
-      <ChevronRight size={20} color={colors.textLight} />
-    </TouchableOpacity>
-  );
-
   const renderSectionHeader = ({ section }: { section: SectionData }) => (
-    <View style={styles.sectionContainer}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionHeaderText}>{section.title.toLowerCase()}</Text>
+    <View style={styles.kanbanColumn}>
+      <View style={styles.kanbanColumnHeader}>
+        <Text style={styles.kanbanColumnTitle}>{section.title.toLowerCase()}</Text>
+        <View style={styles.kanbanBadge}>
+          <Text style={styles.kanbanBadgeText}>{section.data.length}</Text>
+        </View>
       </View>
-      {section.data.map((piece) => (
-        <TouchableOpacity
-          key={piece.id}
-          style={styles.sectionPieceCard}
-          onPress={() => {
-            setSelectedPiece(piece);
-            setShowStageModal(true);
-          }}
-        >
-          <View style={styles.pieceContent}>
-            <Text style={styles.pieceTitle}>{piece.title}</Text>
-            {piece.description ? (
-              <Text style={styles.pieceDescription}>{piece.description}</Text>
-            ) : null}
+      <View style={styles.kanbanCards}>
+        {section.data.length === 0 ? (
+          <View style={styles.emptyColumn}>
+            <Text style={styles.emptyColumnText}>No pieces</Text>
           </View>
-          <ChevronRight size={20} color={colors.textLight} />
-        </TouchableOpacity>
-      ))}
+        ) : (
+          section.data.map((piece) => (
+            <TouchableOpacity
+              key={piece.id}
+              style={styles.kanbanCard}
+              onPress={() => {
+                setSelectedPiece(piece);
+                setShowStageModal(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.kanbanCardTitle}>{piece.title}</Text>
+              {piece.description ? (
+                <Text style={styles.kanbanCardDescription} numberOfLines={2}>
+                  {piece.description}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
     </View>
   );
 
@@ -700,58 +693,70 @@ const styles = StyleSheet.create({
   listContent: {
     padding: spacing.lg,
   },
-  pieceCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+  kanbanColumn: {
+    marginBottom: spacing.lg,
+  },
+  kanbanColumnHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  kanbanColumnTitle: {
+    ...typography.heading,
+    fontStyle: 'italic',
+    color: colors.clay,
+    fontSize: 20,
+  },
+  kanbanBadge: {
+    backgroundColor: colors.sand,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    minWidth: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  kanbanBadgeText: {
+    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.clay,
+  },
+  kanbanCards: {
+    gap: spacing.sm,
+  },
+  kanbanCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     ...shadows.subtle,
   },
-  pieceContent: {
-    flex: 1,
-  },
-  pieceTitle: {
+  kanbanCardTitle: {
     ...typography.subheading,
     marginBottom: spacing.xs,
   },
-  pieceDescription: {
+  kanbanCardDescription: {
     ...typography.caption,
+    lineHeight: 18,
   },
-  sectionContainer: {
-    backgroundColor: colors.surface,
+  emptyColumn: {
+    backgroundColor: colors.sand,
     borderRadius: radius.md,
     padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.soft,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  sectionHeaderText: {
-    ...typography.heading,
-    fontStyle: 'italic',
-    color: colors.clay,
-  },
-  sectionPieceCard: {
-    backgroundColor: colors.sand,
-    borderRadius: radius.sm,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.borderLight,
+    borderStyle: 'dashed',
+  },
+  emptyColumnText: {
+    ...typography.caption,
+    fontStyle: 'italic',
+    color: colors.textSubtle,
   },
   emptyState: {
     flex: 1,
